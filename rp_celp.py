@@ -22,7 +22,8 @@ class Codec:
         autocorr = self.autocorrelate(samples)
         autocorr = autocorr * Codec.band_expansion
         refl_coefs = self.autocorr2refl_coeffs(autocorr)
-        return refl_coefs
+        lars = self.refl_coefs2lars(refl_coefs, approx=False)
+        return lars
 
     def autocorrelate(self, samples):
         # TODO: should we autocorrelate using samples from previous frame?
@@ -55,4 +56,30 @@ class Codec:
                 e[l][e1+k] = e[l-1][e1+k] - refl_coefs[r0+l] * e[l-1][e1+l-k]
 
         return refl_coefs
+
+    def refl_coefs2lars(self, refl_coefs, approx=True):
+        """If approx is True use approximation as specified in standard,
+        if set to False use regular equation."""
+        if approx:
+            return self.refl_coefs2lars_approx(refl_coefs)
+        else:
+            return self.refl_coefs2lars_eval(refl_coefs)
+
+    def refl_coefs2lars_approx(self, refl_coefs):
+        lars = []
+        for i in range(len(refl_coefs)):
+            refl_c = refl_coefs[i]
+            abs_arefl_c = abs(refl_c)
+            if abs_arefl_c < 0.675:
+                lar = refl_c
+            elif abs_arefl_c < 0.950:
+                lar = np.copysign(2*abs_arefl_c - 0.675, refl_c)
+            else:
+                lar = np.copysign(8*abs_arefl_c - 6.375, refl_c)
+            lars.append(lar)
+
+        return lars
+
+    def refl_coefs2lars_eval(self, refl_coefs):
+        return np.log10((1 + refl_coefs)/(1 - refl_coefs))
 
