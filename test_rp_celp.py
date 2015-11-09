@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from rp_celp import Codec
 import numpy as np
 import unittest

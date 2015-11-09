@@ -40,7 +40,19 @@ class Codec:
             for j in range(-p+1+i, p+1):
                 e[i][e1 + j] = e[i-1][e1 + j] + refl_coef[k0 + i] * e[i-1][e1 + i - j]
 
-        return refl_coef
+        lars = []
+        for i in range(len(refl_coef)):
+            rc = refl_coef[i]
+            arc = abs(rc)
+            if arc < 0.675:
+                lar = rc
+            elif arc < 0.950:
+                lar = np.copysign(2*arc - 0.675, rc)
+            else:
+                lar = np.copysign(8*arc - 6.375, rc)
+            lars.append(lar)
+
+        return lars
 
     def autocorrelate(self, data):
         # FIXME: should we autocorrelate using previous sample?
