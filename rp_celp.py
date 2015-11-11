@@ -1,4 +1,5 @@
 import numpy as np
+from bisect import bisect_left
 
 
 class Codec:
@@ -6,6 +7,21 @@ class Codec:
 
     band_expansion = np.array((1., 0.9995, 0.9982, 0.9959, 0.9928, 0.9888,
         0.9839, 0.9781, 0.9716, 0.9641, 0.9559, ) )
+
+# LAR index to quantized value conversion
+# TODO: find out and use conversion for TETRAPOL CODEC
+    LAR_idx = (
+            np.linspace(-0.97, 0.97, 32),
+            np.linspace(-0.97, 0.97, 32),
+            np.linspace(-0.97, 0.97, 32),
+            np.linspace(-0.97, 0.97, 32),
+            np.linspace(-0.97, 0.97, 32),
+            np.linspace(-0.97, 0.97, 32),
+            np.linspace(-0.97, 0.97, 32),
+            np.linspace(-0.97, 0.97, 32),
+            np.linspace(-0.97, 0.97, 32),
+            np.linspace(-0.97, 0.97, 32),
+            )
 
     def __init__(self):
         pass
@@ -16,14 +32,21 @@ class Codec:
 # normalize samples to range <-1, 1>
         samples = np.array(samples)/(2**12-1)
         lp = self.lp_analysis(samples)
-        return lp
+
+        return {
+                'lar_idx': lp['lar_idx'],
+                }
 
     def lp_analysis(self, samples):
         autocorr = self.autocorrelate(samples)
         autocorr = autocorr * Codec.band_expansion
         refl_coefs = self.autocorr2refl_coeffs(autocorr)
         lars = self.refl_coefs2lars(refl_coefs, approx=False)
-        return lars
+        lar_idx = self.lars2lar_idxs(lars)
+
+        return {
+                'lar_idx': lar_idx,
+                }
 
     def autocorrelate(self, samples):
         # TODO: should we autocorrelate using samples from previous frame?
@@ -82,4 +105,24 @@ class Codec:
 
     def refl_coefs2lars_eval(self, refl_coefs):
         return np.log10((1 + refl_coefs)/(1 - refl_coefs))
+
+    def lars2lar_idxs(self, lars):
+        """Return LARs indexes of LARs"""
+        lar_idx = []
+        for i in range(len(self.LAR_idx)):
+            lar = lars[i]
+            LAR_idx = self.LAR_idx[i]
+            if lar >= LAR_idx[-1]:
+                lar_idx.append(len(LAR_idx) - 1)
+                continue
+            if lar <= LAR_idx[0]:
+                lar_idx.append(0)
+                continue
+            idx = bisect_left(LAR_idx, lar)
+            if (LAR_idx[idx-1] - lar) / (LAR_idx[idx] - LAR_idx[idx-1]) >= 0.5:
+                lar_idx.append(idx+1)
+                continue
+            lar_idx.append(idx)
+
+        return lar_idx
 
