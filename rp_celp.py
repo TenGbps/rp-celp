@@ -26,6 +26,8 @@ class Codec:
     def __init__(self, approx=True):
         self.old_lars = None
         self.approx = approx
+# required one extra sample from past
+        self.prec = np.zeros(81)
 
     def decode(self, lar_idx):
         """Get encoded frame, return 160 samples in 13 bit unifor format
@@ -56,6 +58,7 @@ class Codec:
         lar_quant = self.lar_idxs2lars(lar_idx)
         lars3 = self.lar_interpolate(lar_quant)
         refl_coefs = [self.lar2refl_coef(lars) for lars in lars3]
+        s = self.win_shift(samples)
 
         return {
                 'lar_idx': lar_idx,
@@ -178,4 +181,13 @@ class Codec:
     def lar2refl_coef_eval(self, lars):
         lars = np.power(10, lars)
         return (lars - 1)/(lars + 1)
+
+    def win_shift(self, samples):
+        """5.8 Temporal windows shift.
+        Returns current window samples with one extra sample from past at the begin."""
+        s = np.empty(161)
+        s[:81] = self.prec
+        s[81:] = samples[:80]
+        self.prec[:] = samples[79:]
+        return s
 
