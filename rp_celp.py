@@ -26,6 +26,11 @@ class Codec:
     def __init__(self):
         pass
 
+    def decode(self, lar_idx):
+        """Get encoded frame, return 160 samples in 13 bit unifor format
+            (16 bit signed int) of decoded audio at rate 8ksampl/sec."""
+        return lar_idx
+
     def encode(self, samples):
         """Takes 160 samples in 13 bit uniform format (16 bit signed int)
         and compress it using RP-CELP codec."""

@@ -29,6 +29,13 @@ class TestCodec(unittest.TestCase):
                 [ 6.4, 6.36, 6.32, 6.28, 6.24, 6.2, 6.16, 6.12, 6.08, 6.04, 6.],
                 decimal=3)
 
+    def test_coder_decoder(self):
+        codec = Codec()
+
+        r = codec.encode(TestCodec.sin440)
+        samples = codec.decode(**r)
+        print(samples)
+
     def test_autocorr2refl_coeffs(self):
         codec = Codec()
 
