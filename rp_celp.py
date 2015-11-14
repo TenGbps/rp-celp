@@ -29,7 +29,9 @@ class Codec:
     def decode(self, lar_idx):
         """Get encoded frame, return 160 samples in 13 bit unifor format
             (16 bit signed int) of decoded audio at rate 8ksampl/sec."""
-        return lar_idx
+        lar_quant = self.lar_idxs2lars(lar_idx)
+
+        return lar_quant
 
     def encode(self, samples):
         """Takes 160 samples in 13 bit uniform format (16 bit signed int)
@@ -48,6 +50,7 @@ class Codec:
         refl_coefs = self.autocorr2refl_coeffs(autocorr)
         lars = self.refl_coefs2lars(refl_coefs, approx=False)
         lar_idx = self.lars2lar_idxs(lars)
+        lar_quant = self.lar_idxs2lars(lar_idx)
 
         return {
                 'lar_idx': lar_idx,
@@ -130,4 +133,8 @@ class Codec:
             lar_idx.append(idx)
 
         return lar_idx
+
+    def lar_idxs2lars(self, lar_idx):
+        """Return quantized values for LAR indexes."""
+        return [self.LAR_idx[i][lar_idx[i]] for i in range(len(lar_idx))]
 
