@@ -24,14 +24,15 @@ class Codec:
             )
 
     def __init__(self):
-        pass
+        self.old_lars = None
 
     def decode(self, lar_idx):
         """Get encoded frame, return 160 samples in 13 bit unifor format
             (16 bit signed int) of decoded audio at rate 8ksampl/sec."""
         lar_quant = self.lar_idxs2lars(lar_idx)
+        lars3 = self.lar_interpolate(lar_quant)
 
-        return lar_quant
+        return lars3
 
     def encode(self, samples):
         """Takes 160 samples in 13 bit uniform format (16 bit signed int)
@@ -51,6 +52,7 @@ class Codec:
         lars = self.refl_coefs2lars(refl_coefs, approx=False)
         lar_idx = self.lars2lar_idxs(lars)
         lar_quant = self.lar_idxs2lars(lar_idx)
+        lars3 = self.lar_interpolate(lar_quant)
 
         return {
                 'lar_idx': lar_idx,
@@ -136,5 +138,17 @@ class Codec:
 
     def lar_idxs2lars(self, lar_idx):
         """Return quantized values for LAR indexes."""
-        return [self.LAR_idx[i][lar_idx[i]] for i in range(len(lar_idx))]
+        return np.array([self.LAR_idx[i][lar_idx[i]] for i in range(len(lar_idx))])
+
+    def lar_interpolate(self, lars):
+        """Create 3 set of LARs interpolating the current and previous set.
+        If no previous set is available returns original LARs."""
+        if self.old_lars is None:
+            self.old_lars = lars
+            return (lars, lars, lars)
+        lars1 = 0.875*self.old_lars + 0.125*lars
+        lars2 = 0.500*self.old_lars + 0.500*lars
+        lars3 = 0.125*self.old_lars + 0.875*lars
+        self.old_lars = lars
+        return (lars1, lars2, lars3)
 
