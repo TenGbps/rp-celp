@@ -70,6 +70,18 @@ class TestCodec(unittest.TestCase):
         assert_almost_equal(r, (-0.99325, -0.99281, -0.99234, -0.99187, -0.99140,
             -0.99094, -0.99047, -0.99000, -0.98953, -0.98906), decimal=4)
 
+    def test_lars2refl_coef(self):
+        codec = Codec(approx=True)
+        refl_coefs = np.array((-0.98, -0.9, -0.2, 0., 0.6, 0.99))
+        lars = codec.refl_coefs2lars(refl_coefs)
+        r = codec.lar2refl_coef(lars)
+        assert_almost_equal(refl_coefs, r)
+
+        codec = Codec(approx=False)
+        lars = codec.refl_coefs2lars(refl_coefs)
+        r = codec.lar2refl_coef(lars)
+        assert_almost_equal(refl_coefs, r)
+
 
 if __name__ == '__main__':
     unittest.main()

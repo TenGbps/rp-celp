@@ -23,16 +23,18 @@ class Codec:
             np.linspace(-0.97, 0.97, 32),
             )
 
-    def __init__(self):
+    def __init__(self, approx=True):
         self.old_lars = None
+        self.approx = approx
 
     def decode(self, lar_idx):
         """Get encoded frame, return 160 samples in 13 bit unifor format
             (16 bit signed int) of decoded audio at rate 8ksampl/sec."""
         lar_quant = self.lar_idxs2lars(lar_idx)
         lars3 = self.lar_interpolate(lar_quant)
+        refl_coefs3 = [self.lar2refl_coef(lars) for lars in lars3]
 
-        return lars3
+        return refl_coefs3
 
     def encode(self, samples):
         """Takes 160 samples in 13 bit uniform format (16 bit signed int)
@@ -49,10 +51,11 @@ class Codec:
         autocorr = self.autocorrelate(samples)
         autocorr = autocorr * Codec.band_expansion
         refl_coefs = self.autocorr2refl_coeffs(autocorr)
-        lars = self.refl_coefs2lars(refl_coefs, approx=False)
+        lars = self.refl_coefs2lars(refl_coefs)
         lar_idx = self.lars2lar_idxs(lars)
         lar_quant = self.lar_idxs2lars(lar_idx)
         lars3 = self.lar_interpolate(lar_quant)
+        refl_coefs = [self.lar2refl_coef(lars) for lars in lars3]
 
         return {
                 'lar_idx': lar_idx,
@@ -90,10 +93,10 @@ class Codec:
 
         return refl_coefs
 
-    def refl_coefs2lars(self, refl_coefs, approx=True):
+    def refl_coefs2lars(self, refl_coefs):
         """If approx is True use approximation as specified in standard,
         if set to False use regular equation."""
-        if approx:
+        if self.approx:
             return self.refl_coefs2lars_approx(refl_coefs)
         else:
             return self.refl_coefs2lars_eval(refl_coefs)
@@ -151,4 +154,28 @@ class Codec:
         lars3 = 0.125*self.old_lars + 0.875*lars
         self.old_lars = lars
         return (lars1, lars2, lars3)
+
+    def lar2refl_coef(self, lars):
+        if self.approx:
+            return self.lar2refl_coef_approx(lars)
+        else:
+            return self.lar2refl_coef_eval(lars)
+
+    def lar2refl_coef_approx(self, lars):
+        refl_coefs = []
+        for lar in lars:
+            abs_lar = abs(lar)
+            if abs_lar < 0.675:
+                refl_coef = lar
+            elif abs_lar < 1.225:
+                refl_coef = np.copysign(0.5*abs_lar + 0.3375, lar)
+            else:
+                refl_coef = np.copysign(0.125*abs_lar + 0.796875, lar)
+
+            refl_coefs.append(refl_coef)
+        return refl_coefs
+
+    def lar2refl_coef_eval(self, lars):
+        lars = np.power(10, lars)
+        return (lars - 1)/(lars + 1)
 
