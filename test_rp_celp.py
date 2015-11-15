@@ -8,7 +8,11 @@ import unittest
 
 class TestCodec(unittest.TestCase):
 # sine at 440 Hz for sample rate 8000 samp/sec
+    sin50 = np.sin(np.linspace(0, 159*2*np.pi/Codec.samp_rate*50, num=160)) * (2**12-1)
+    sin220 = np.sin(np.linspace(0, 159*2*np.pi/Codec.samp_rate*220, num=160)) * (2**12-1)
     sin440 = np.sin(np.linspace(0, 159*2*np.pi/Codec.samp_rate*440, num=160)) * (2**12-1)
+    sin900 = np.sin(np.linspace(0, 159*2*np.pi/Codec.samp_rate*900, num=160)) * (2**12-1)
+    sin2000 = np.sin(np.linspace(0, 159*2*np.pi/Codec.samp_rate*2000, num=160)) * (2**12-1)
     silence = np.array([0., ] * 160)
     silence2 = np.array([0.2 * (2**12-1), ] * 160)
 
@@ -81,6 +85,29 @@ class TestCodec(unittest.TestCase):
         lars = codec.refl_coefs2lars(refl_coefs)
         r = codec.lar2refl_coef(lars)
         assert_almost_equal(refl_coefs, r)
+
+    def test_sort_term_filtering(self):
+        codec = Codec(approx=False)
+
+        samples = TestCodec.sin900 / (2**12 - 1)
+        autocorr = codec.autocorrelate(samples)
+        refl_coefs = codec.autocorr2refl_coeffs(autocorr)
+        TestCodec._csv(refl_coefs, name='refl_coefs')
+        TestCodec._csv(samples, name='samples')
+        samples_ = np.concatenate( ((0., ), samples) )
+        refl_coefs = (refl_coefs, refl_coefs, refl_coefs)
+        r = codec.short_term_analysis_filtering(samples_, refl_coefs)
+        TestCodec._csv(r, name='analysis')
+        r2 = codec.short_term_synthesis_filtering(r, refl_coefs)
+        TestCodec._csv(r2, name='synthesis')
+
+    @staticmethod
+    def _csv(row, name=None):
+        if name is not None:
+            print("%s," % name, end='')
+        for i in row:
+            print("%s," % i, end='')
+        print()
 
 
 if __name__ == '__main__':
