@@ -23,6 +23,9 @@ class Codec:
             np.linspace(-0.97, 0.97, 32),
             )
 
+# size of subframes
+    N = (56, 48, 56)
+
     def __init__(self, approx=True):
         self.old_lars = None
         self.approx = approx
@@ -59,6 +62,7 @@ class Codec:
         lars3 = self.lar_interpolate(lar_quant)
         refl_coefs = [self.lar2refl_coef(lars) for lars in lars3]
         s = self.win_shift(samples)
+        d = self.short_term_analysis_filtering(s, refl_coefs)
 
         return {
                 'lar_idx': lar_idx,
@@ -190,4 +194,27 @@ class Codec:
         s[81:] = samples[:80]
         self.prec[:] = samples[79:]
         return s
+
+    def short_term_analysis_filtering(self, s, refl_coefs):
+        """5.9 Short term analysis filtering."""
+# FIXME: k-1 element of tmp1/tmp2 is not defined in specification we use sample from
+# past, s contains 1 extra sample at begining
+        d = np.empty(len(s) - 1)
+        tmp1 = np.empty((11, len(s)))
+        tmp2 = np.empty((11, len(s)))
+        tmp1[0][:] = s
+        tmp2[0][:] = s
+        n = 0
+        # use range 1, N instead of 0, N-1
+        for k in range(1, len(s)):
+            for i in range(1, 11):
+                tmp1[i][k] = tmp1[i-1][k] + refl_coefs[n][i-1]*tmp2[i-1][k-1]
+                tmp2[i][k] = tmp2[i-1][k-1] + refl_coefs[n][i-1]*tmp1[i-1][k]
+            d[k-1] = tmp1[10][k]
+            if k == self.N[0]:
+                n = 1
+            elif k == self.N[0] + self.N[1]:
+                n = 2
+
+        return d
 
