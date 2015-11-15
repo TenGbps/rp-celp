@@ -31,6 +31,8 @@ class Codec:
         self.approx = approx
 # required one extra sample from past
         self.prec = np.zeros(81)
+# decoder, keep history for short term synthesis filter
+        self.v = np.zeros((11, 161))
 
     def decode(self, lar_idx):
         """Get encoded frame, return 160 samples in 13 bit unifor format
@@ -217,4 +219,27 @@ class Codec:
                 n = 2
 
         return d
+
+    def short_term_synthesis_filtering(self, d, refl_coefs):
+        """6.3 Short term synthesis filtering."""
+        s = np.empty(len(d))
+        tmp = np.empty((11, len(d)))
+        tmp[0][:] = d
+        n = 0
+        # use range 1, N instead of 0, N-1
+        for k in range(1, len(d)+1):
+            for i in range(1, 11):
+                tmp[i][k-1] = tmp[i-1][k-1] - refl_coefs[n][10-i]*self.v[10-i][k-1]
+                self.v[11-i][k] = self.v[10-i][k-1] - refl_coefs[n][10-i]*tmp[i][k-1]
+            if k == self.N[0]:
+                n = 1
+            elif k == self.N[0] + self.N[1]:
+                n = 2
+            self.v[0][k] = tmp[10][k-1]
+            s[k-1] = tmp[10][k-1]
+        # prepare for next round
+        for i in range(len(self.v)):
+            self.v[i][0] = self.v[i][-1]
+
+        return s
 
