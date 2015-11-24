@@ -11,16 +11,16 @@ class Codec:
 # LAR index to quantized value conversion
 # TODO: find out and use conversion for TETRAPOL CODEC
     LAR_idx = (
+            np.linspace(-0.97, 0.97, 64),
+            np.linspace(-0.97, 0.97, 64),
             np.linspace(-0.97, 0.97, 32),
             np.linspace(-0.97, 0.97, 32),
             np.linspace(-0.97, 0.97, 32),
-            np.linspace(-0.97, 0.97, 32),
-            np.linspace(-0.97, 0.97, 32),
-            np.linspace(-0.97, 0.97, 32),
-            np.linspace(-0.97, 0.97, 32),
-            np.linspace(-0.97, 0.97, 32),
-            np.linspace(-0.97, 0.97, 32),
-            np.linspace(-0.97, 0.97, 32),
+            np.linspace(-0.97, 0.97, 16),
+            np.linspace(-0.97, 0.97, 16),
+            np.linspace(-0.97, 0.97, 16),
+            np.linspace(-0.97, 0.97, 16),
+            np.linspace(-0.97, 0.97, 16),
             )
 
 # size of subframes
