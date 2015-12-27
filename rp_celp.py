@@ -75,30 +75,29 @@ class Codec:
         return [ np.correlate(samples, samples[i:])[0] for i in range(11) ]
 
     def autocorr2refl_coeffs(self, autocorr):
-        """Literature: Speech Coding Algorithms, Wai C. Chu page 119."""
+        """Literature: Speech Coding Algorithms, Wai C. Chu page 119 (we fixed? the sign
+        in 4.80. IT++ lerouxguegenrc() (but this function accessed array out of range)."""
 # prevent divission by zero bellow
         if abs(autocorr[0]) < 2**-12:
             autocorr[0] = 2**-12
 
-# e1 and r0 are index offsets to element with math index 0
-# example: math e(0, -1) => python e[0][e1 - 1]
         M = len(autocorr) - 1
-        e1 = M - 1
-        e = np.empty( (M, 2*M,) )
-# e[0] is simetricaly filled around element 0 with autocorr
-        e[0][e1:] = autocorr
-        e[0][:e1] = autocorr[-2:0:-1]
-
+        r = np.empty(2*M+1)
+        rny = np.empty(2*M+1)
         refl_coefs = np.empty(M)
-        r0 = - 1
-        for l in range(1, M+1):
-            refl_coefs[r0+l] = (-e[l-1][e1+l])/e[l-1][e1]
-# TODO: clip values in range, in some cases they go a bit out of bounds (check!)
-            refl_coefs[r0+l] = np.clip(refl_coefs[r0+l], -0.99999, 0.99999)
-            if l == M:
+
+        for j in range(0, M+1):
+            r[M-j] = autocorr[j]
+            r[M+j] = autocorr[j]
+
+        for m in range(1, M+1):
+            refl_coefs[m-1] = -r[M+m] / r[M]
+            if m == M:
                 break
-            for k in range(-M+1+l, M+1):
-                e[l][e1+k] = e[l-1][e1+k] - refl_coefs[r0+l] * e[l-1][e1+l-k]
+            for j in range(-M+m+1, M+1):
+                rny[M+j] = r[M+j] + refl_coefs[m-1] * r[M+m-j]
+            for j in range(-M, M+1):
+                r[M+j] = rny[M+j]
 
         return refl_coefs
 
