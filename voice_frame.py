@@ -33,7 +33,7 @@ class VoiceFrame:
             value = ''
             for bit in bits:
                 value += str(self.data[bit])
-            self.values[name] = value
+            self.values[name] = int(value, 2)
 
     def get_lars(self):
         return self.values
