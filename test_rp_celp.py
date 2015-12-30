@@ -108,7 +108,7 @@ class TestCodec(unittest.TestCase):
         if name is not None:
             print("%s," % name, end='')
         for i in row:
-            print("%s," % i, end='')
+            print("\"%s\"," % str(i).replace('.', ','), end='')
         print()
 
 
