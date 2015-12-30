@@ -8,20 +8,20 @@ import sys
 
 class VoiceFrame:
     coeffs = {
-            'LAR00': (0, 23, 22, 21, 20),   # OK
-            'LAR01': (1, 27, 26, 25, 24),
-            'LAR02': (2, 30, 29, 28,),
-            'LAR04': (3, 33, 32, 31,),
-            'LAR05': (4, 36, 35, 34),
+            'LAR01': (1, 0, 23, 22, 21, 20),
+            'LAR02': (2, 27, 26, 25, 24),
+            'LAR03': (3, 30, 29, 28),
+            'LAR04': (4, 31, 33, 32),
+            'LAR05': (5, 36, 35, 34),
             'LAR06': (39, 38, 37),
             'LAR07': (42, 41, 40),
             'LAR08': (45, 44, 43),
-            'LAR09': (48, 47, 46),
+            'LAR09': (47, 46, 48),
             'LAR10': (51, 50, 49),
             }
 
     def __init__(self, frame):
-        """friame should be byte array with frame data."""
+        """frame should be byte array with frame data."""
         self.data = []
         for b in frame:
             for i in range(8):
