@@ -33,6 +33,8 @@ class Codec:
         self.prec = np.zeros(81)
 # decoder, keep history for short term synthesis filter
         self.v = np.zeros((11, 161))
+# encoder, keep 1 sample from previous frame as initial value for short term filter
+        self.s_prev = 0
 
     def decode(self, lar_idx):
         """Get encoded frame, return 160 samples in 13 bit unifor format
@@ -198,24 +200,25 @@ class Codec:
 
     def short_term_analysis_filtering(self, s, refl_coefs):
         """5.9 Short term analysis filtering."""
-# FIXME: k-1 element of tmp1/tmp2 is not defined in specification we use sample from
-# past, s contains 1 extra sample at begining
-        d = np.empty(len(s) - 1)
-        tmp1 = np.empty((11, len(s)))
-        tmp2 = np.empty((11, len(s)))
-        tmp1[0][:] = s
-        tmp2[0][:] = s
-        n = 0
-        # use range 1, N instead of 0, N-1
-        for k in range(1, len(s)):
+        d = np.empty(len(s))
+        r = refl_coefs[0]
+# k-1 element of tmp1/tmp2 is not defined, we use value from previous frame if possible
+        tmp1 = np.empty((11, len(s) + 1))
+        tmp2 = np.empty((11, len(s) + 1))
+        tmp1[0][:-1] = s
+        tmp2[0][:-1] = s
+        tmp1[0][-1] = self.s_prev
+        tmp2[0][-1] = self.s_prev
+        self.s_prev = s[0]
+        for k in range(0, len(s)):
             for i in range(1, 11):
-                tmp1[i][k] = tmp1[i-1][k] + refl_coefs[n][i-1]*tmp2[i-1][k-1]
-                tmp2[i][k] = tmp2[i-1][k-1] + refl_coefs[n][i-1]*tmp1[i-1][k]
-            d[k-1] = tmp1[10][k]
+                tmp1[i][k] = tmp1[i-1][k] + r[i-1]*tmp2[i-1][k-1]
+                tmp2[i][k] = tmp2[i-1][k-1] + r[i-1]*tmp1[i-1][k]
+            d[k] = tmp1[10][k]
             if k == self.N[0]:
-                n = 1
+                r = refl_coefs[1]
             elif k == self.N[0] + self.N[1]:
-                n = 2
+                r = refl_coefs[2]
 
         return d
 
