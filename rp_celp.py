@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.signal
 from bisect import bisect_left
 
 
@@ -11,17 +12,23 @@ class Codec:
 # LAR index to quantized value conversion
 # TODO: find out and use conversion for TETRAPOL CODEC
     LAR_idx = (
-            np.linspace(-0.97, 0.97, 64),
-            np.linspace(-0.97, 0.97, 64),
-            np.linspace(-0.97, 0.97, 32),
-            np.linspace(-0.97, 0.97, 32),
-            np.linspace(-0.97, 0.97, 32),
-            np.linspace(-0.97, 0.97, 16),
-            np.linspace(-0.97, 0.97, 16),
-            np.linspace(-0.97, 0.97, 16),
-            np.linspace(-0.97, 0.97, 16),
-            np.linspace(-0.97, 0.97, 16),
+            np.linspace(-2.0643047, 0.38465041, 64),
+            np.linspace(-0.7255134, 2.02982235, 32),
+            np.linspace(-1.3538182, 0.62888535, 16),
+            np.linspace(-0.4090979, 1.36354402, 16),
+            np.linspace(-0.7099015, 0.57737373, 16),
+            np.linspace(-0.4737691, 0.82117651, 8),
+            np.linspace(-0.8141674, 0.47146487, 8),
+            np.linspace(-0.5001262, 0.71935197, 8),
+            np.linspace(-0.7204825, 0.47273149, 8),
+            np.linspace(-0.3206912, 0.55081164, 8),
             )
+
+    # Quantization Gain values for indexes 0..31
+    QLBG = (0, 5, 11, 19, 27, 35, 43, 51, 59, 71, 87, 103, 119, 143, 175, 207,
+            239, 287, 351, 415, 479, 575, 703, 831, 959, 1151, 1407, 1663,
+            1919, 2303, 2815, 3583, )
+    QLBG_norm = np.array(QLBG) / max(QLBG)
 
 # size of subframes
     N = (56, 48, 56)
@@ -35,15 +42,29 @@ class Codec:
         self.v = np.zeros(11)
 # encoder, keep 1 sample from previous frame as initial value for short term filter
         self.s_prev = 0
+# white noise, excitation vector for synthesis filter
+        self.noise = np.clip(np.random.normal(size=(1600000,)), -2.1, 2.1)
+        h = scipy.signal.firwin(numtaps=8, cutoff=3000, nyq=Codec.samp_rate/2)
+        self.noise=scipy.signal.lfilter(h, 1.0, self.noise)
+        self.noise_offs = 0
 
-    def decode(self, lar_idx):
+    def decode(self, lar_idx, subframe1, subframe2, subframe3):
         """Get encoded frame, return 160 samples in 13 bit unifor format
             (16 bit signed int) of decoded audio at rate 8ksampl/sec."""
         lar_quant = self.lar_idxs2lars(lar_idx)
         lars3 = self.lar_interpolate(lar_quant)
         refl_coefs3 = [self.lar2refl_coef(lars) for lars in lars3]
 
-        return refl_coefs3
+        self.noise_offs += 160
+        if self.noise_offs >= len(self.noise):
+            self.noise_offs = 160
+        d = self.noise[self.noise_offs-160:self.noise_offs] * 0.00003
+        #d[0] = subframe1['stochastic_gain'] / 2.**5
+        #d[self.N[1]] = subframe2['stochastic_gain'] / 2.**5
+        #d[self.N[1] + self.N[2]] = subframe3['stochastic_gain'] / 2.**5
+
+        s = self.short_term_synthesis_filtering(d, refl_coefs3)
+        return s
 
     def encode(self, samples):
         """Takes 160 samples in 13 bit uniform format (16 bit signed int)
