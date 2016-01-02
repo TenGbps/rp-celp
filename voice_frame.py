@@ -18,6 +18,9 @@ class VoiceFrame:
             'LAR08': (45, 44, 43),
             'LAR09': (47, 46, 48),
             'LAR10': (51, 50, 49),
+            'stochastic_gain1': (8, 63, 62, 61, 64),
+            'stochastic_gain2': (13, 87, 86, 85, 84),
+            'stochastic_gain3': (18, 109, 108, 107, 106),
             }
 
     def __init__(self, frame):
