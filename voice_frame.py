@@ -18,9 +18,24 @@ class VoiceFrame:
             'LAR08': (45, 44, 43),
             'LAR09': (47, 46, 48),
             'LAR10': (51, 50, 49),
+
+            'LTP1_lag': (6, 55, 54, 53, 52, 58, 57, 56),
+            'LTP1_gain': (7, 60, 59),
             'stochastic_gain1': (8, 63, 62, 61, 64),
+            'st1_dec': (10, 9),
+            'st1_sig_ph': (71, 70, 69, 68, 67, 66, 65, 74, 73, 72),
+
+            'LTP2_lag': (11, 79, 78, 77, 76, 75, 81, 80),
+            'LTP2_gain': (12, 83, 82),
             'stochastic_gain2': (13, 87, 86, 85, 84),
+            'st1_dec': (15, 14),
+            'st1_sig_ph': (95, 94, 93, 92, 91, 90, 89, 88, 96),
+
+            'LTP3_lag': (16, 103, 102, 101, 100, 99, 98, 97),
+            'LTP3_gain': (17, 105, 104),
             'stochastic_gain3': (18, 109, 108, 107, 106),
+            'st1_dec': (19, 119),
+            'st1_sig_ph': (111, 110, 118, 117, 116, 115, 114, 113, 112),
             }
 
     def __init__(self, frame):
@@ -33,7 +48,7 @@ class VoiceFrame:
 
         self.values = {}
         for name, bits in VoiceFrame.coeffs.items():
-            value = ''
+            value = '0'
             for bit in bits:
                 value += str(self.data[bit])
             self.values[name] = int(value, 2)
@@ -92,7 +107,6 @@ if __name__ == '__main__':
             continue
 
         frame = VoiceFrame(frame)
-        lars = frame.get_lars()
-        print_cvs(lars, first)
+        print_cvs(frame.values, first)
         first = False
 
