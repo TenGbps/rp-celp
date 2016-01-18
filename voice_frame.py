@@ -39,7 +39,12 @@ class VoiceFrame:
             self.values[name] = int(value, 2)
 
     def get_lars(self):
-        return self.values
+        d = {}
+        for k in self.values:
+            if not k.startswith('LAR'):
+                continue
+            d[k] = self.values[k]
+        return d
 
 
 def get_voice_frame(json_row):
